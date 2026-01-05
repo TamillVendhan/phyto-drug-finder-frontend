@@ -1,26 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  FaLeaf,
-  FaFlask,
-  FaBook,
+import { 
+  FaLeaf, 
+  FaFlask, 
+  FaBook, 
   FaUsers,
   FaImages,
+  FaChartLine,
   FaArrowUp,
-  FaArrowDown,
+  FaArrowDown
 } from 'react-icons/fa';
 import { statsAPI } from '../api/api';
 import CountUp from 'react-countup';
 
-const StatCard = ({
-  icon: Icon,
-  label,
-  value,
+// Simple CountUp component if you don't want to install the package
+const SimpleCountUp = ({ end, duration = 2, suffix = '' }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const increment = end / (duration * 60);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 1000 / 60);
+
+    return () => clearInterval(timer);
+  }, [end, duration]);
+
+  return <span>{count.toLocaleString()}{suffix}</span>;
+};
+
+// Stat Card Component
+const StatCard = ({ 
+  icon: Icon, 
+  label, 
+  value, 
   suffix = '',
   trend,
   trendValue,
   color = 'primary',
-  link,
+  link 
 }) => {
   const colorClasses = {
     primary: 'stat-card-primary',
@@ -37,7 +62,7 @@ const StatCard = ({
       </div>
       <div className="stat-card-content">
         <span className="stat-card-value">
-          <CountUp end={value} duration={2.5} separator="," suffix={suffix} />
+          <SimpleCountUp end={value} suffix={suffix} />
         </span>
         <span className="stat-card-label">{label}</span>
       </div>
@@ -50,116 +75,94 @@ const StatCard = ({
     </div>
   );
 
-  return link ? <Link to={link} className="stat-card-link">{content}</Link> : content;
+  if (link) {
+    return <Link to={link} className="stat-card-link">{content}</Link>;
+  }
+
+  return content;
 };
 
+// Main Stats Component
 const Stats = ({ variant = 'home' }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = variant === 'home'
-          ? await statsAPI.home()
-          : await statsAPI.dashboard();
-
-        // New api.js returns { data } directly
-        setStats(response.data || {});
-      } catch (err) {
-        console.error('Failed to load stats:', err);
-        // Fallback data (great for offline/dev)
-        setStats({
-          total_plants: 150,
-          total_compounds: 2500,
-          total_case_studies: 45,
-          total_users: 320,
-          total_images: 890,
-          pending_case_studies: 12,
-          pending_images: 8,
-          unread_feedback: 5,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
   }, [variant]);
 
-  // Loading State (shared)
-  if (loading) {
-    return (
-      <div className="stats-section">
-        <div className="stats-grid">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="stat-card stat-card-skeleton">
-              <div className="skeleton-icon"></div>
-              <div className="skeleton-content">
-                <div className="skeleton-value"></div>
-                <div className="skeleton-label"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = variant === 'home' 
+        ? await statsAPI.home()
+        : await statsAPI.dashboard();
+      
+      if (response.data.success) {
+        setStats(response.data.data);
+      } else {
+        setError('Failed to load statistics');
+      }
+    } catch (err) {
+      console.error('Stats error:', err);
+      // Use fallback data for development
+      setStats({
+        total_plants: 150,
+        total_compounds: 2500,
+        total_case_studies: 45,
+        total_users: 320,
+        total_images: 890,
+        pending_case_studies: 12,
+        pending_images: 8,
+        unread_feedback: 5,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Home Variant
+  // Home Page Stats
   if (variant === 'home') {
-    return (
-      <div className="stats-section">
-        <div className="stats-grid">
-          <StatCard
-            icon={FaLeaf}
-            label="Medicinal Plants"
-            value={stats?.total_plants || 0}
-            suffix="+"
-            color="primary"
-          />
-          <StatCard
-            icon={FaFlask}
-            label="Bioactive Compounds"
-            value={stats?.total_compounds || 0}
-            suffix="+"
-            color="info"
-          />
-          <StatCard
-            icon={FaBook}
-            label="Research Studies"
-            value={stats?.total_case_studies || 0}
-            suffix="+"
-            color="success"
-          />
-          <StatCard
-            icon={FaImages}
-            label="Plant Images"
-            value={stats?.total_images || 0}
-            suffix="+"
-            color="purple"
-          />
+    if (loading) {
+      return (
+        <div className="stats-section">
+          <div className="stats-grid">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="stat-card stat-card-skeleton">
+                <div className="skeleton-icon"></div>
+                <div className="skeleton-content">
+                  <div className="skeleton-value"></div>
+                  <div className="skeleton-label"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+
   }
 
-  // Dashboard Variant
+  // Dashboard Stats
   if (variant === 'dashboard') {
+    if (loading) {
+      return <div className="stats-loading">Loading dashboard stats...</div>;
+    }
+
     return (
       <div className="dashboard-stats">
         <div className="stats-grid stats-grid-dashboard">
-          <StatCard
+          <StatCard 
             icon={FaLeaf}
             label="Total Plants"
             value={stats?.total_plants || 0}
             color="primary"
             trend="up"
             trendValue={12}
-            link="/admin/plants"
           />
-          <StatCard
+          <StatCard 
             icon={FaFlask}
             label="Compounds"
             value={stats?.total_compounds || 0}
@@ -167,13 +170,14 @@ const Stats = ({ variant = 'home' }) => {
             trend="up"
             trendValue={8}
           />
-          <StatCard
+          <StatCard 
             icon={FaBook}
             label="Case Studies"
             value={stats?.total_case_studies || 0}
+            suffix=""
             color="success"
           />
-          <StatCard
+          <StatCard 
             icon={FaUsers}
             label="Registered Users"
             value={stats?.total_users || 0}
@@ -183,7 +187,7 @@ const Stats = ({ variant = 'home' }) => {
           />
         </div>
 
-        {/* Pending Approvals */}
+        {/* Pending Items */}
         <div className="pending-stats">
           <h3>Pending Approvals</h3>
           <div className="pending-grid">
@@ -197,7 +201,7 @@ const Stats = ({ variant = 'home' }) => {
             </div>
             <div className="pending-item">
               <span className="pending-count">{stats?.unread_feedback || 0}</span>
-              <span className="pending-label">Unread Feedback</span>
+              <span className="pending-label">Feedback</span>
             </div>
           </div>
         </div>
@@ -208,29 +212,23 @@ const Stats = ({ variant = 'home' }) => {
   return null;
 };
 
-// Mini Stats for hero/floating cards
-export const MiniStats = ({ plants = 150, compounds = 2500, studies = 45 }) => {
+// Mini Stats for inline use
+export const MiniStats = ({ plants, compounds, caseStudies }) => {
   return (
     <div className="mini-stats">
       <div className="mini-stat">
         <FaLeaf className="mini-stat-icon" />
-        <span className="mini-stat-value">
-          <CountUp end={plants} duration={2} separator="," />+
-        </span>
+        <span className="mini-stat-value">{plants}</span>
         <span className="mini-stat-label">Plants</span>
       </div>
       <div className="mini-stat">
         <FaFlask className="mini-stat-icon" />
-        <span className="mini-stat-value">
-          <CountUp end={compounds} duration={2} separator="," />+
-        </span>
+        <span className="mini-stat-value">{compounds}</span>
         <span className="mini-stat-label">Compounds</span>
       </div>
       <div className="mini-stat">
         <FaBook className="mini-stat-icon" />
-        <span className="mini-stat-value">
-          <CountUp end={studies} duration={2} separator="," />+
-        </span>
+        <span className="mini-stat-value">{caseStudies}</span>
         <span className="mini-stat-label">Studies</span>
       </div>
     </div>
