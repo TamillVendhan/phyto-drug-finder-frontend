@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { PageLoader } from './components/Loader';
 import ProtectedRoute from './components/ProtectedRoute';
+import ApiTestPage from './pages/ApiTest';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -57,6 +58,7 @@ function App() {
       <main className="main-content">
         <Suspense fallback={<PageLoader />}>
           <Routes>
+            <Route path="/api-test" element={<ApiTestPage />} />
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/plants" element={<Plants />} />

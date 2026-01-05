@@ -1,52 +1,60 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaTimes, FaLeaf, FaFlask, FaHistory, FaArrowRight } from 'react-icons/fa';
+import {
+  FaSearch,
+  FaTimes,
+  FaLeaf,
+  FaFlask,
+  FaHistory,
+  FaArrowRight,
+} from 'react-icons/fa';
 import { plantsAPI } from '../api/api';
 import debounce from 'lodash.debounce';
 
-const SearchBar = ({ 
+const SearchBar = ({
   placeholder = "Search plants by name, family, or compound...",
   autoFocus = false,
   showSuggestions = true,
   onSearch,
   className = "",
-  size = "normal" // normal, large
+  size = "normal", // "normal" | "large"
 }) => {
   const navigate = useNavigate();
   const inputRef = useRef(null);
-  const suggestionsRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  // Load recent searches from localStorage
+  // Load recent searches
   useEffect(() => {
     const saved = localStorage.getItem('phyto_recent_searches');
     if (saved) {
-      setRecentSearches(JSON.parse(saved).slice(0, 5));
+      try {
+        setRecentSearches(JSON.parse(saved).slice(0, 5));
+      } catch (e) {
+        localStorage.removeItem('phyto_recent_searches');
+      }
     }
   }, []);
 
-  // Debounced search function
+  // Debounced API search
   const fetchSuggestions = useCallback(
     debounce(async (searchQuery) => {
-      if (searchQuery.length < 2) {
+      if (searchQuery.trim().length < 2) {
         setSuggestions([]);
         return;
       }
 
       setIsLoading(true);
       try {
-        const response = await plantsAPI.search(searchQuery, { limit: 6 });
-        if (response.data.success) {
-          setSuggestions(response.data.data || []);
-        }
+        const { data } = await plantsAPI.search(searchQuery.trim(), { limit: 6 });
+        setSuggestions(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error('Search suggestions error:', error);
         setSuggestions([]);
       } finally {
         setIsLoading(false);
@@ -55,61 +63,62 @@ const SearchBar = ({
     []
   );
 
-  // Handle input change
+  // Input change
   const handleInputChange = (e) => {
     const value = e.target.value;
     setQuery(value);
-    setSelectedIndex(-1);
-    
+
     if (showSuggestions) {
       fetchSuggestions(value);
       setShowDropdown(true);
     }
   };
 
-  // Save to recent searches
-  const saveRecentSearch = (searchTerm) => {
-    const updated = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 5);
+  // Save recent search
+  const saveRecentSearch = (term) => {
+    if (!term.trim()) return;
+    const cleaned = term.trim();
+    const updated = [
+      cleaned,
+      ...recentSearches.filter((s) => s !== cleaned),
+    ].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem('phyto_recent_searches', JSON.stringify(updated));
   };
 
-  // Handle search submit
+  // Submit search
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (query.trim()) {
-      saveRecentSearch(query.trim());
-      setShowDropdown(false);
-      
-      if (onSearch) {
-        onSearch(query.trim());
-      } else {
-        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-      }
+    e?.preventDefault();
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    saveRecentSearch(trimmed);
+    setShowDropdown(false);
+    setQuery('');
+
+    if (onSearch) {
+      onSearch(trimmed);
+    } else {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
-  // Handle suggestion click
+  // Click suggestion → go to plant detail
   const handleSuggestionClick = (plant) => {
     saveRecentSearch(plant.common_name);
-    setShowDropdown(false);
     setQuery('');
+    setShowDropdown(false);
     navigate(`/plant/${plant.slug}`);
   };
 
-  // Handle recent search click
+  // Click recent → search again
   const handleRecentClick = (term) => {
     setQuery(term);
-    setShowDropdown(false);
-    
-    if (onSearch) {
-      onSearch(term);
-    } else {
-      navigate(`/search?q=${encodeURIComponent(term)}`);
-    }
+    inputRef.current?.focus();
+    handleSubmit();
   };
 
-  // Clear search
+  // Clear input
   const clearSearch = () => {
     setQuery('');
     setSuggestions([]);
@@ -117,83 +126,47 @@ const SearchBar = ({
     inputRef.current?.focus();
   };
 
-  // Clear recent searches
+  // Clear all recent
   const clearRecentSearches = () => {
     setRecentSearches([]);
     localStorage.removeItem('phyto_recent_searches');
   };
 
-  // Keyboard navigation
-  const handleKeyDown = (e) => {
-    const items = [...suggestions, ...recentSearches.map(s => ({ type: 'recent', term: s }))];
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(prev => (prev < items.length - 1 ? prev + 1 : 0));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(prev => (prev > 0 ? prev - 1 : items.length - 1));
-        break;
-      case 'Enter':
-        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-          e.preventDefault();
-          handleSuggestionClick(suggestions[selectedIndex]);
-        } else if (selectedIndex >= suggestions.length) {
-          e.preventDefault();
-          handleRecentClick(recentSearches[selectedIndex - suggestions.length]);
-        }
-        break;
-      case 'Escape':
-        setShowDropdown(false);
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Close dropdown when clicking outside
+  // Click outside → close dropdown
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        suggestionsRef.current && 
-        !suggestionsRef.current.contains(event.target) &&
-        !inputRef.current?.contains(event.target)
-      ) {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const showRecentSearches = showDropdown && query.length === 0 && recentSearches.length > 0;
-  const showSuggestionsList = showDropdown && query.length >= 2;
+  // Show states
+  const showRecent = showDropdown && query.length === 0 && recentSearches.length > 0;
+  const showResults = showDropdown && query.length >= 2;
 
   return (
     <div className={`search-bar-wrapper ${className} ${size === 'large' ? 'search-bar-large' : ''}`}>
-      <form onSubmit={handleSubmit} className="search-bar-form">
+      <form onSubmit={handleSubmit} className="search-bar-form" autoComplete="off">
         <div className="search-input-container">
           <FaSearch className="search-bar-icon" />
-          
+
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={handleInputChange}
             onFocus={() => setShowDropdown(true)}
-            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="search-bar-input"
             autoFocus={autoFocus}
-            autoComplete="off"
           />
 
           {query && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="search-clear-btn"
               onClick={clearSearch}
               aria-label="Clear search"
@@ -202,12 +175,12 @@ const SearchBar = ({
             </button>
           )}
 
-          <button type="submit" className="search-submit-btn">
+          <button type="submit" className="search-submit-btn" disabled={isLoading}>
             {isLoading ? (
-              <span className="search-loader"></span>
+              <span className="search-loader" />
             ) : (
               <>
-                <span>Search</span>
+                <span className="submit-text">Search</span>
                 <FaArrowRight />
               </>
             )}
@@ -216,62 +189,67 @@ const SearchBar = ({
       </form>
 
       {/* Dropdown */}
-      {(showSuggestionsList || showRecentSearches) && (
-        <div className="search-dropdown" ref={suggestionsRef}>
+      {(showRecent || showResults) && (
+        <div className="search-dropdown" ref={dropdownRef}>
           {/* Recent Searches */}
-          {showRecentSearches && (
+          {showRecent && (
             <div className="search-recent">
               <div className="search-dropdown-header">
-                <span><FaHistory /> Recent Searches</span>
-                <button onClick={clearRecentSearches} className="clear-recent-btn">
+                <span>
+                  <FaHistory /> Recent Searches
+                </span>
+                <button type="button" onClick={clearRecentSearches} className="clear-recent-btn">
                   Clear
                 </button>
               </div>
               <ul className="search-suggestions-list">
-                {recentSearches.map((term, index) => (
-                  <li 
+                {recentSearches.map((term) => (
+                  <li
                     key={term}
-                    className={`search-suggestion-item recent ${selectedIndex === suggestions.length + index ? 'selected' : ''}`}
+                    className="search-suggestion-item recent"
                     onClick={() => handleRecentClick(term)}
                   >
                     <FaHistory className="suggestion-icon" />
                     <span className="suggestion-text">{term}</span>
+                    <FaArrowRight className="suggestion-arrow" />
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* Suggestions */}
-          {showSuggestionsList && (
+          {/* Live Suggestions */}
+          {showResults && (
             <div className="search-suggestions">
               {isLoading ? (
                 <div className="search-loading">
-                  <span className="spinner small"></span>
+                  <span className="spinner small" />
                   <span>Searching...</span>
                 </div>
               ) : suggestions.length > 0 ? (
                 <>
                   <div className="search-dropdown-header">
-                    <span><FaLeaf /> Plants</span>
+                    <span>
+                      <FaLeaf /> Matching Plants
+                    </span>
                   </div>
                   <ul className="search-suggestions-list">
-                    {suggestions.map((plant, index) => (
-                      <li 
+                    {suggestions.map((plant) => (
+                      <li
                         key={plant.id}
-                        className={`search-suggestion-item ${selectedIndex === index ? 'selected' : ''}`}
+                        className="search-suggestion-item"
                         onClick={() => handleSuggestionClick(plant)}
                       >
                         <div className="suggestion-image">
                           {plant.image_url ? (
-                            <img src={plant.image_url} alt={plant.common_name} />
+                            <img src={plant.image_url} alt={plant.common_name} loading="lazy" />
                           ) : (
                             <FaLeaf />
                           )}
                         </div>
                         <div className="suggestion-info">
-                          <span className="suggestion-name">{plant.common_name}</span>
-                          <span className="suggestion-scientific">{plant.scientific_name}</span>
+                          <div className="suggestion-name">{plant.common_name}</div>
+                          <div className="suggestion-scientific">{plant.scientific_name}</div>
                         </div>
                         {plant.compound_count > 0 && (
                           <span className="suggestion-badge">
@@ -281,9 +259,10 @@ const SearchBar = ({
                       </li>
                     ))}
                   </ul>
+
                   <div className="search-dropdown-footer">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="view-all-btn"
                       onClick={handleSubmit}
                     >
@@ -294,8 +273,8 @@ const SearchBar = ({
               ) : (
                 <div className="search-no-results">
                   <FaSearch />
-                  <span>No plants found for "{query}"</span>
-                  <p>Try searching with different keywords</p>
+                  <p>No plants found for "{query}"</p>
+                  <small>Try different keywords or spelling</small>
                 </div>
               )}
             </div>

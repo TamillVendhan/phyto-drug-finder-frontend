@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FaLeaf, 
-  FaFlask, 
-  FaSearch, 
-  FaArrowRight, 
+import {
+  FaLeaf,
+  FaFlask,
+  FaSearch,
+  FaArrowRight,
   FaBook,
   FaImages,
   FaMicroscope,
@@ -14,77 +14,51 @@ import {
   FaStar,
   FaQuoteLeft
 } from 'react-icons/fa';
+
 import SearchBar from '../components/SearchBar';
 import PlantCard from '../components/PlantCard';
 import Stats from '../components/Stats';
 import { SkeletonCard } from '../components/Loader';
 import { plantsAPI } from '../api/api';
+import testAPIs from '../utills/apiTest.js';
 
 const Home = () => {
   const [featuredPlants, setFeaturedPlants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchFeaturedPlants();
+    const loadFeaturedPlants = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const data = await plantsAPI.featured();
+        // handleResponse already extracts the data
+        
+        if (Array.isArray(data)) {
+          setFeaturedPlants(data);
+        } else if (data && Array.isArray(data.plants)) {
+          // Alternative response structure
+          setFeaturedPlants(data.plants);
+        } else {
+          console.warn('Unexpected response format:', data);
+          setFeaturedPlants([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch featured plants:', error);
+        setError(error.message || 'Failed to load featured plants');
+        setFeaturedPlants([]);
+      } finally {
+        setLoading(false);
+      }
+      window.testAPIs = testAPIs;
+    };
+
+    loadFeaturedPlants();
   }, []);
 
-  const fetchFeaturedPlants = async () => {
-    try {
-      setLoading(true);
-      const response = await plantsAPI.featured();
-      if (response.data.success) {
-        setFeaturedPlants(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching featured plants:', error);
-      // Fallback data for development
-      setFeaturedPlants([
-        {
-          id: 1,
-          common_name: 'Neem',
-          scientific_name: 'Azadirachta indica',
-          slug: 'neem',
-          family: 'Meliaceae',
-          description: 'Known for its antibacterial and antifungal properties.',
-          compound_count: 45,
-          image_url: null
-        },
-        {
-          id: 2,
-          common_name: 'Tulsi',
-          scientific_name: 'Ocimum sanctum',
-          slug: 'tulsi',
-          family: 'Lamiaceae',
-          description: 'Sacred herb with numerous medicinal benefits.',
-          compound_count: 32,
-          image_url: null
-        },
-        {
-          id: 3,
-          common_name: 'Turmeric',
-          scientific_name: 'Curcuma longa',
-          slug: 'turmeric',
-          family: 'Zingiberaceae',
-          description: 'Powerful anti-inflammatory and antioxidant spice.',
-          compound_count: 28,
-          image_url: null
-        },
-        {
-          id: 4,
-          common_name: 'Ashwagandha',
-          scientific_name: 'Withania somnifera',
-          slug: 'ashwagandha',
-          family: 'Solanaceae',
-          description: 'Adaptogenic herb used in Ayurvedic medicine.',
-          compound_count: 35,
-          image_url: null
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Data arrays moved outside render for better performance & clarity
   const features = [
     {
       icon: FaMicroscope,
@@ -123,6 +97,13 @@ const Home = () => {
     }
   ];
 
+  const popularPlants = [
+    { name: 'Neem', slug: 'neem' },
+    { name: 'Tulsi', slug: 'tulsi' },
+    { name: 'Turmeric', slug: 'turmeric' },
+    { name: 'Ashwagandha', slug: 'ashwagandha' }
+  ];
+
   return (
     <div className="home-page">
       {/* Hero Section */}
@@ -140,31 +121,29 @@ const Home = () => {
               <span className="text-gradient"> Medicinal Plants</span>
             </h1>
             <p className="hero-description">
-              A comprehensive database of phytochemicals, bioactive compounds, and 
-              traditional medicinal knowledge. Bridging ancient wisdom with modern 
-              drug discovery research.
+              A comprehensive database of phytochemicals, bioactive compounds, and traditional medicinal knowledge.
+              Bridging ancient wisdom with modern drug discovery research.
             </p>
-            
-            {/* Search Bar */}
+
             <div className="hero-search">
-              <SearchBar 
+              <SearchBar
                 size="large"
                 placeholder="Search plants by name, compound, or family..."
                 autoFocus={false}
+                isLoading={loading}
               />
             </div>
 
-            {/* Quick Links */}
             <div className="hero-quick-links">
               <span>Popular:</span>
-              <Link to="/plant/neem">Neem</Link>
-              <Link to="/plant/tulsi">Tulsi</Link>
-              <Link to="/plant/turmeric">Turmeric</Link>
-              <Link to="/plant/ashwagandha">Ashwagandha</Link>
+              {popularPlants.map((plant) => (
+                <Link key={plant.slug} to={`/plant/${plant.slug}`}>
+                  {plant.name}
+                </Link>
+              ))}
             </div>
           </div>
 
-          {/* Hero Image/Illustration */}
           <div className="hero-illustration">
             <div className="hero-plant-circle">
               <FaLeaf className="hero-leaf-icon" />
@@ -182,14 +161,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats */}
       <section className="stats-section-wrapper">
         <div className="container">
           <Stats variant="home" />
         </div>
       </section>
 
-      {/* Featured Plants Section */}
+      {/* Featured Plants */}
       <section className="featured-section">
         <div className="container">
           <div className="section-header">
@@ -205,7 +184,9 @@ const Home = () => {
 
           <div className="featured-grid">
             {loading ? (
-              [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+              Array(4)
+                .fill(null)
+                .map((_, i) => <SkeletonCard key={i} />)
             ) : (
               featuredPlants.map((plant) => (
                 <PlantCard key={plant.id} plant={plant} />
@@ -215,7 +196,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features */}
       <section className="features-section">
         <div className="container">
           <div className="section-header centered">
@@ -238,7 +219,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* How It Works */}
       <section className="how-it-works-section">
         <div className="container">
           <div className="section-header centered">
@@ -275,7 +256,38 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Testimonials - Now Rendered! */}
+      <section className="testimonials-section">
+        <div className="container">
+          <div className="section-header centered">
+            <span className="section-badge">Testimonials</span>
+            <h2>What Researchers Say</h2>
+            <p>Feedback from experts using our platform</p>
+          </div>
+
+          <div className="testimonials-grid">
+            {testimonials.map((t, i) => (
+              <div className="testimonial-card" key={i}>
+                <FaQuoteLeft className="quote-icon" />
+                <p className="testimonial-text">"{t.text}"</p>
+                <div className="testimonial-author">
+                  <strong>{t.name}</strong>
+                  <span>{t.role}</span>
+                </div>
+                <div className="testimonial-rating">
+                  {Array(t.rating)
+                    .fill(null)
+                    .map((_, i) => (
+                      <FaStar key={i} className="star" />
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
       <section className="cta-section">
         <div className="container">
           <div className="cta-card">
@@ -283,8 +295,7 @@ const Home = () => {
               <FaUserGraduate className="cta-icon" />
               <h2>Are You a Researcher?</h2>
               <p>
-                Register to submit case studies, upload plant images, and contribute 
-                to our growing database of medicinal plant research.
+                Register to submit case studies, upload plant images, and contribute to our growing database.
               </p>
               <div className="cta-buttons">
                 <Link to="/register" className="btn btn-primary btn-lg">
@@ -310,40 +321,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="testimonials-section">
-        <div className="container">
-          <div className="section-header centered">
-            <span className="section-badge">Testimonials</span>
-            <h2>What Researchers Say</h2>
-          </div>
-
-          <div className="testimonials-grid">
-            {testimonials.map((testimonial, index) => (
-              <div className="testimonial-card" key={index}>
-                <FaQuoteLeft className="quote-icon" />
-                <p className="testimonial-text">{testimonial.text}</p>
-                <div className="testimonial-rating">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <FaStar key={i} />
-                  ))}
-                </div>
-                <div className="testimonial-author">
-                  <div className="author-avatar">
-                    {testimonial.name.charAt(0)}
-                  </div>
-                  <div className="author-info">
-                    <span className="author-name">{testimonial.name}</span>
-                    <span className="author-role">{testimonial.role}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Access Section */}
+      {/* Quick Access */}
       <section className="quick-access-section">
         <div className="container">
           <div className="quick-access-grid">
@@ -351,25 +329,25 @@ const Home = () => {
               <FaLeaf className="qa-icon" />
               <h3>Browse Plants</h3>
               <p>Explore our complete plant database</p>
-              <span className="qa-arrow"><FaArrowRight /></span>
+              <FaArrowRight className="qa-arrow" />
             </Link>
             <Link to="/case-studies" className="quick-access-card">
               <FaBook className="qa-icon" />
               <h3>Case Studies</h3>
               <p>Read research papers and studies</p>
-              <span className="qa-arrow"><FaArrowRight /></span>
+              <FaArrowRight className="qa-arrow" />
             </Link>
             <Link to="/gallery" className="quick-access-card">
               <FaImages className="qa-icon" />
               <h3>Image Gallery</h3>
               <p>View plant photographs and diagrams</p>
-              <span className="qa-arrow"><FaArrowRight /></span>
+              <FaArrowRight className="qa-arrow" />
             </Link>
             <Link to="/feedback" className="quick-access-card">
               <FaSearch className="qa-icon" />
               <h3>Ask Question</h3>
               <p>Get help from our experts</p>
-              <span className="qa-arrow"><FaArrowRight /></span>
+              <FaArrowRight className="qa-arrow" />
             </Link>
           </div>
         </div>
@@ -377,5 +355,7 @@ const Home = () => {
     </div>
   );
 };
+
+
 
 export default Home;

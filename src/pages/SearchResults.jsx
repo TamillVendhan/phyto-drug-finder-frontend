@@ -16,6 +16,7 @@ import { plantsAPI, compoundsAPI, caseStudiesAPI } from '../api/api';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
+  // Get the query parameter from URL - note the parameter name here
   const query = searchParams.get('q') || '';
 
   // State
@@ -35,28 +36,58 @@ const SearchResults = () => {
   // Fetch results when query changes
   useEffect(() => {
     if (query) {
+      console.log('Query changed, fetching results for:', query);
       fetchAllResults();
     }
   }, [query]);
 
   const fetchAllResults = async () => {
     setLoading(true);
+    
+    console.log('Fetching results for query:', query);
+    
     try {
-      // Fetch all types in parallel
+      // Map 'q' from URL to 'query' for the API
+      // This is the key fix - we're explicitly using query as the parameter name
       const [plantsRes, compoundsRes, caseStudiesRes] = await Promise.allSettled([
         plantsAPI.search(query, { limit: 20 }),
         compoundsAPI.search(query),
         caseStudiesAPI.search(query)
       ]);
+      
+      // Debug the response
+      console.log('Plants API Response:', plantsRes);
+      if (plantsRes.status === 'fulfilled') {
+        console.log('Plants Response Data Structure:', plantsRes.value.data);
+      }
+      
+      const getResponseData = (response) => {
+  if (response.status !== 'fulfilled') {
+    console.error('API request failed:', response.reason);
+    return [];
+  }
+  
+  if (!response.value?.data?.success) {
+    console.warn('API returned unsuccessful response:', response.value);
+    return [];
+  }
+  
+  // Check both data structures
+  const responseData = response.value.data;
+  return Array.isArray(responseData.data) ? responseData.data : [];
+};
 
-      // Process results
-      const plantsData = plantsRes.status === 'fulfilled' && plantsRes.value.data.success 
-        ? plantsRes.value.data.data : [];
-      const compoundsData = compoundsRes.status === 'fulfilled' && compoundsRes.value.data.success 
-        ? compoundsRes.value.data.data : [];
-      const caseStudiesData = caseStudiesRes.status === 'fulfilled' && caseStudiesRes.value.data.success 
-        ? caseStudiesRes.value.data.data : [];
-
+      
+      const plantsData = getResponseData(plantsRes);
+      const compoundsData = getResponseData(compoundsRes);
+      const caseStudiesData = getResponseData(caseStudiesRes);
+      
+      console.log('Processed Plants Data:', plantsData);
+      if (plantsData.length > 0) {
+        console.log('First plant item:', plantsData[0]);
+      }
+      
+      // IMPORTANT: Remove the fallback data completely
       setResults({
         plants: plantsData,
         compounds: compoundsData,
@@ -80,22 +111,21 @@ const SearchResults = () => {
 
     } catch (error) {
       console.error('Search error:', error);
-      // Fallback data
+      
+      // CRITICAL CHANGE: Don't use hardcoded fallback data
+      // Instead, show empty results on error
       setResults({
-        plants: [
-          {
-            id: 1,
-            common_name: 'Neem',
-            scientific_name: 'Azadirachta indica',
-            slug: 'neem',
-            family: 'Meliaceae',
-            compound_count: 45
-          }
-        ],
+        plants: [],
         compounds: [],
         caseStudies: []
       });
-      setCounts({ plants: 1, compounds: 0, caseStudies: 0 });
+      
+      setCounts({
+        plants: 0,
+        compounds: 0,
+        caseStudies: 0
+      });
+      
     } finally {
       setLoading(false);
     }
@@ -140,6 +170,7 @@ const SearchResults = () => {
             <SearchBar 
               placeholder="Search again..."
               autoFocus={false}
+              initialValue={query} // Add this to pre-fill the search bar
             />
           </div>
         </div>
