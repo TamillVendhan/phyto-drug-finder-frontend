@@ -58,6 +58,30 @@ const Home = () => {
     loadFeaturedPlants();
   }, []);
 
+  // Data arrays moved outside render for better performance & clarity
+  const features = [
+    {
+      icon: FaMicroscope,
+      title: 'Bioactive Compounds',
+      description: 'Explore detailed information about phytochemicals and their molecular properties.'
+    },
+    {
+      icon: FaDna,
+      title: 'Drug-Likeness Analysis',
+      description: 'Lipinski rules and ADMET properties for drug discovery research.'
+    },
+    {
+      icon: FaGlobeAsia,
+      title: 'Traditional Knowledge',
+      description: 'Ayurveda, Siddha, and folk medicine documentation.'
+    },
+    {
+      icon: FaBook,
+      title: 'Research Case Studies',
+      description: 'Peer-reviewed research and clinical studies on medicinal plants.'
+    }
+  ];
+
   const testimonials = [
     {
       name: 'Dr. Priya Sharma',
