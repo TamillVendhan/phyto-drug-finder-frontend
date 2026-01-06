@@ -17,7 +17,6 @@ import {
 
 import SearchBar from '../components/SearchBar';
 import PlantCard from '../components/PlantCard';
-import Stats from '../components/Stats';
 import { SkeletonCard } from '../components/Loader';
 import { plantsAPI } from '../api/api';
 import testAPIs from '../utills/apiTest.js';
@@ -161,12 +160,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="stats-section-wrapper">
-        <div className="container">
-          <Stats variant="home" />
-        </div>
-      </section>
+     
 
       {/* Featured Plants */}
       <section className="featured-section">

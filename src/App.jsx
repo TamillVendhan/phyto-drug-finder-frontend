@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import ScrollToTop from './utills/ScrollToTop';
 
 // Components
 import Navbar from './components/Navbar';
@@ -57,6 +58,7 @@ function App() {
       
       <main className="main-content">
         <Suspense fallback={<PageLoader />}>
+          <ScrollToTop />
           <Routes>
             <Route path="/api-test" element={<ApiTestPage />} />
             {/* Public Routes */}
