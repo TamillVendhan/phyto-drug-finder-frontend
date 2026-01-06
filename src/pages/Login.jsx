@@ -15,7 +15,7 @@ import { ButtonLoader } from '../components/Loader';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, isAuthenticated, loading, user } = useAuth(); // Added 'user' from context
 
   const [formData, setFormData] = useState({
     email: '',
@@ -25,13 +25,19 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+
+      // If no specific 'from' path, send admin to dashboard
+      const redirectTo = (from === '/' && user.role === 'admin')
+        ? '/admin/dashboard'
+        : from;
+
+      navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, user, navigate, location]);
 
   // Handle input change
   const handleChange = (e) => {
@@ -40,12 +46,9 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user types
+    // Clear field-specific error when typing
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -76,17 +79,31 @@ const Login = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setErrors({});
+
     try {
       const result = await login(formData.email, formData.password);
-      
+
       if (result.success) {
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
+        // Login function already sets user, isAuthenticated, localStorage, and shows toast
+
+        // Determine where to redirect
+        const fromPath = location.state?.from?.pathname;
+        const userRole = result.user?.role || user?.role;
+
+        let redirectTo = fromPath || '/';
+
+        // If redirecting to home and user is admin → go to dashboard
+        if (redirectTo === '/' && userRole === 'admin') {
+          redirectTo = '/admin/dashboard';
+        }
+
+        navigate(redirectTo, { replace: true });
       } else {
         setErrors({ general: result.message || 'Login failed' });
       }
     } catch (error) {
-      setErrors({ general: 'An error occurred. Please try again.' });
+      setErrors({ general: error.message || 'An error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }

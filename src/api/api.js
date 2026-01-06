@@ -9,40 +9,41 @@ const API_BASE_URL =
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true,
-  timeout: 15000, // 15 seconds default timeout
+  withCredentials: true,        // This sends PHPSESSID cookie
+  timeout: 15000,
 });
 
 // ===============================================
 // INTERCEPTORS
 // ===============================================
 
-// Add auth token to every request
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("phyto_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // REMOVE ALL TOKEN LOGIC - We use sessions only!
+    // No Authorization header needed
+
+    // Only handle FormData properly
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']; // Let browser set boundary
     }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Global error handling + 401 redirect
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("phyto_token");
+      console.warn('Session expired or unauthorized');
+
+      // Clear frontend state
       localStorage.removeItem("phyto_user");
 
-      // Avoid redirect loop
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login?expired=true";
+      // Redirect to login
+      if (window.location.pathname !== "/py/login") {
+        window.location.href = "/py/login?expired=true";
       }
     }
 
@@ -52,8 +53,7 @@ api.interceptors.response.use(
 
     return Promise.reject(error);
   }
-);
-
+);  
 // ===============================================
 // RESPONSE HELPERS
 // ===============================================
@@ -127,7 +127,6 @@ export const plantsAPI = {
     return api
       .get("/plants/list.php", { params })
       .then((response) => {
-        console.log("Plants list raw response:", response);
         // Handle response data inconsistencies
         if (response.data) {
           return {
@@ -318,43 +317,86 @@ export const culturalAPI = {
 // ==================== CASE STUDIES ====================
 export const caseStudiesAPI = {
   list: (params = {}) =>
-    api.get("/case-studies/list.php", { params }).then(handleResponse),
+    api
+      .get("/case-studies/list.php", { params })
+      .then(handleResponse)
+      .catch(handleError),
+
   get: (id) =>
-    api.get("/case-studies/get.php", { params: { id } }).then(handleResponse),
+    api
+      .get("/case-studies/get.php", { params: { id } })
+      .then(handleResponse)
+      .catch(handleError),
+
   byPlant: (plantId) =>
     api
       .get("/case-studies/by-plant.php", { params: { plant_id: plantId } })
-      .then(handleResponse),
+      .then(handleResponse)
+      .catch(handleError),
+
   search: (query) =>
     api
       .get("/case-studies/search.php", { params: { query } })
-      .then(handleResponse),
-  mySubmissions: () =>
-    api.get("/case-studies/my-submissions.php").then(handleResponse),
-  stats: () => api.get("/case-studies/stats.php").then(handleResponse),
-  pending: () => api.get("/case-studies/pending.php").then(handleResponse),
-  approve: (id) =>
-    api.post("/case-studies/approve.php", { id }).then(handleResponse),
-  reject: (id, reason) =>
-    api.post("/case-studies/reject.php", { id, reason }).then(handleResponse),
-  delete: (id) =>
-    api.post("/case-studies/delete.php", { id }).then(handleResponse),
+      .then(handleResponse)
+      .catch(handleError),
 
-  submit: (formData) =>
+  mySubmissions: () =>
     api
-      .post("/case-studies/submit.php", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 60000,
-      })
-      .then(handleResponse),
+      .get("/case-studies/my-submissions.php")
+      .then(handleResponse)
+      .catch(handleError),
+
+  stats: () =>
+    api
+      .get("/case-studies/stats.php")
+      .then(handleResponse)
+      .catch(handleError),
+
+  pending: () =>
+    api
+      .get("/case-studies/pending.php")
+      .then(handleResponse)
+      .catch(handleError),
+
+  approve: (id) =>
+    api
+      .post("/case-studies/approve.php", { id })
+      .then(handleResponse)
+      .catch(handleError),
+
+  reject: (id, reason) =>
+    api
+      .post("/case-studies/reject.php", { id, reason })
+      .then(handleResponse)
+      .catch(handleError),
+
+  delete: (id) =>
+    api
+      .post("/case-studies/delete.php", { id })
+      .then(handleResponse)
+      .catch(handleError),
+
+  // FIXED: Submit with FormData - Let browser set Content-Type automatically
+submit: (formData) =>
+  api
+    .post("/case-studies/submit.php", formData, {
+      timeout: 60000,
+      // Remove headers completely - let axios handle FormData
+    })
+    .then(handleResponse)
+    .catch(handleError),
+
 
   download: (id) =>
-    api.get("/case-studies/download.php", {
-      params: { id },
-      responseType: "blob",
-      timeout: 30000,
-    }),
+    api
+      .get("/case-studies/download.php", {
+        params: { id },
+        responseType: "blob",
+        timeout: 60000,
+      })
+      .catch(handleError),
 };
+
 
 // ==================== IMAGES ====================
 export const imagesAPI = {
@@ -381,7 +423,6 @@ export const imagesAPI = {
   upload: (formData) =>
     api
       .post("/images/upload.php", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
         timeout: 90000, // 90 seconds for larger images
       })
       .then(handleResponse),

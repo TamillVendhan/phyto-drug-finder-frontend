@@ -176,17 +176,22 @@ const Home = () => {
             </Link>
           </div>
 
-          <div className="featured-grid">
-            {loading ? (
-              Array(4)
-                .fill(null)
-                .map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              featuredPlants.map((plant) => (
-                <PlantCard key={plant.id} plant={plant} />
-              ))
-            )}
-          </div>
+         <div className="featured-grid">
+  {loading ? (
+    Array(4)
+      .fill(null)
+      .map((_, i) => <SkeletonCard key={i} />)
+  ) : error ? (
+    <div className="error-state">
+      <p>{error}</p>
+    </div>
+  ) : (
+    featuredPlants.map((plant) => (
+      <PlantCard key={plant.id} plant={plant} />
+    ))
+  )}
+</div>
+
         </div>
       </section>
 

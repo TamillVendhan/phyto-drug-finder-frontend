@@ -1,23 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { 
-  FaBook, 
-  FaPlus, 
-  FaSearch,
-  FaFilter,
-  FaDownload,
-  FaEye,
-  FaUser,
-  FaCalendar,
-  FaUniversity,
-  FaLeaf,
-  FaChevronLeft,
-  FaChevronRight
+  FaBook, FaPlus, FaSearch, FaDownload, FaEye, FaUser, 
+  FaCalendar, FaUniversity, FaLeaf, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
-import SearchBar from '../components/SearchBar';
-import { SkeletonCard, InlineLoader } from '../components/Loader';
-import { caseStudiesAPI, plantsAPI } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { caseStudiesAPI, plantsAPI } from '../api/api';
 import { toast } from 'react-toastify';
 
 const CaseStudies = () => {
@@ -40,87 +28,68 @@ const CaseStudies = () => {
 
   useEffect(() => {
     fetchStudies();
-    fetchPlants();
   }, [filters, currentPage]);
+
+  useEffect(() => {
+    fetchPlants();
+  }, []);
 
   const fetchStudies = async () => {
     try {
       setLoading(true);
-      
+
       const params = {
         page: currentPage,
         limit: itemsPerPage,
         sort: filters.sort
       };
-      
+
       if (filters.plant) params.plant_slug = filters.plant;
-      if (filters.search) params.search = filters.search;
+      if (filters.search) params.q = filters.search;
 
       const response = await caseStudiesAPI.list(params);
-      
-      if (response.data.success) {
-        setStudies(response.data.data || []);
-        setTotalCount(response.data.total || 0);
-      }
+
+      const dataArray = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+      const total = response?.pagination?.total || response?.total || dataArray.length;
+
+      setStudies(dataArray);
+      setTotalCount(total);
     } catch (error) {
       console.error('Error fetching case studies:', error);
-      // Fallback data
-      setStudies([
-        {
-          id: 1,
-          title: 'Antimicrobial Properties of Azadirachta indica (Neem) Leaf Extract',
-          abstract: 'This study investigates the antimicrobial activity of neem leaf extracts against common pathogens. Results demonstrate significant inhibition zones against both gram-positive and gram-negative bacteria.',
-          author_name: 'Dr. Priya Sharma',
-          institution: 'University of Delhi',
-          plant_name: 'Neem',
-          created_at: '2024-01-15',
-          download_count: 45
-        },
-        {
-          id: 2,
-          title: 'Curcumin Bioavailability Enhancement: A Comparative Study',
-          abstract: 'Exploring novel formulation strategies to improve the bioavailability of curcumin from Curcuma longa for therapeutic applications.',
-          author_name: 'Prof. Rajesh Kumar',
-          institution: 'AIIMS, New Delhi',
-          plant_name: 'Turmeric',
-          created_at: '2024-01-10',
-          download_count: 32
-        },
-        {
-          id: 3,
-          title: 'Immunomodulatory Effects of Ocimum sanctum (Tulsi) in Clinical Trials',
-          abstract: 'A randomized controlled trial evaluating the immunomodulatory properties of Tulsi extract in healthy adults.',
-          author_name: 'Dr. Anita Desai',
-          institution: 'NIMHANS, Bangalore',
-          plant_name: 'Tulsi',
-          created_at: '2024-01-05',
-          download_count: 28
-        }
-      ]);
-      setTotalCount(25);
+      toast.error('Failed to load case studies');
+      setStudies([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchPlants = async () => {
-    try {
-      const response = await plantsAPI.list({ limit: 50 });
-      if (response.data.success) {
-        setPlants(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching plants:', error);
-    }
-  };
+const fetchPlants = async () => {
+  try {
+    const response = await plantsAPI.list({ limit: 100 });
+
+
+    // The plants array is at response.data.data (due to your wrapper)
+    const plantArray = Array.isArray(response?.data?.data)
+      ? response.data.data
+      : [];
+
+    setPlants(plantArray);
+  } catch (error) {
+    console.error('Error fetching plants:', error);
+    toast.error('Failed to load plant filter');
+    setPlants([]);
+  }
+};
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    const trimmedValue = value?.trim() || '';
+    setFilters(prev => ({ ...prev, [key]: trimmedValue }));
     setCurrentPage(1);
-    
+
     const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set(key === 'search' ? 'q' : key, value);
+    if (trimmedValue) {
+      newParams.set(key === 'search' ? 'q' : key, trimmedValue);
     } else {
       newParams.delete(key === 'search' ? 'q' : key);
     }
@@ -129,34 +98,47 @@ const CaseStudies = () => {
 
   const handleDownload = async (studyId) => {
     try {
-      toast.info('Downloading PDF...');
+      toast.info('Preparing download...');
       const response = await caseStudiesAPI.download(studyId);
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Empty file');
+      }
+
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `case-study-${studyId}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       window.URL.revokeObjectURL(url);
-      toast.success('Downloaded successfully');
+
+      toast.success('Downloaded successfully!');
     } catch (error) {
-      toast.error('Failed to download');
+      console.error('Download failed:', error);
+      toast.error('Download failed');
     }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!dateString) return 'Unknown date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
   };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
     <div className="case-studies-page">
-      {/* Hero Section */}
       <section className="case-studies-hero">
         <div className="container">
           <div className="hero-content">
@@ -177,10 +159,8 @@ const CaseStudies = () => {
         </div>
       </section>
 
-      {/* Main Content */}
       <section className="case-studies-content">
         <div className="container">
-          {/* Filters */}
           <div className="studies-toolbar">
             <div className="search-filter">
               <FaSearch className="search-icon" />
@@ -200,8 +180,10 @@ const CaseStudies = () => {
                 onChange={(e) => handleFilterChange('plant', e.target.value)}
               >
                 <option value="">All Plants</option>
-                {plants.map(plant => (
-                  <option key={plant.id} value={plant.slug}>{plant.common_name}</option>
+                {Array.isArray(plants) && plants.map(plant => (
+                  <option key={plant.id} value={plant.slug}>
+                    {plant.common_name}
+                  </option>
                 ))}
               </select>
 
@@ -217,21 +199,19 @@ const CaseStudies = () => {
             </div>
           </div>
 
-          {/* Results Info */}
           <div className="results-info">
-            <span>Showing <strong>{studies.length}</strong> of <strong>{totalCount}</strong> case studies</span>
+            <span>
+              Showing <strong>{studies.length}</strong> of <strong>{totalCount}</strong> case studies
+            </span>
           </div>
 
-          {/* Studies List */}
           {loading ? (
             <div className="studies-list">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="study-card skeleton">
-                  <div className="skeleton-content">
-                    <div className="skeleton-title"></div>
-                    <div className="skeleton-text"></div>
-                    <div className="skeleton-text short"></div>
-                  </div>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="study-card skeleton">
+                  <div className="skeleton-title"></div>
+                  <div className="skeleton-text"></div>
+                  <div className="skeleton-text short"></div>
                 </div>
               ))}
             </div>
@@ -251,20 +231,24 @@ const CaseStudies = () => {
                       )}
                     </div>
 
-                    <p className="study-abstract">{study.abstract}</p>
+                    <p className="study-abstract">
+                      {study.abstract || 'No abstract available.'}
+                    </p>
 
                     <div className="study-meta">
                       <span className="meta-item">
-                        <FaUser /> {study.author_name}
+                        <FaUser /> {study.submitter_name || study.author_name || 'Anonymous'}
                       </span>
-                      <span className="meta-item">
-                        <FaUniversity /> {study.institution}
-                      </span>
+                      {study.institution && (
+                        <span className="meta-item">
+                          <FaUniversity /> {study.institution}
+                        </span>
+                      )}
                       <span className="meta-item">
                         <FaCalendar /> {formatDate(study.created_at)}
                       </span>
                       <span className="meta-item">
-                        <FaDownload /> {study.download_count} downloads
+                        <FaDownload /> {study.download_count || 0} downloads
                       </span>
                     </div>
                   </div>
@@ -273,9 +257,9 @@ const CaseStudies = () => {
                     <Link to={`/case-studies/${study.id}`} className="btn btn-outline btn-sm">
                       <FaEye /> View
                     </Link>
-                    <button 
-                      className="btn btn-primary btn-sm"
+                    <button
                       onClick={() => handleDownload(study.id)}
+                      className="btn btn-primary btn-sm"
                     >
                       <FaDownload /> PDF
                     </button>
@@ -287,29 +271,28 @@ const CaseStudies = () => {
             <div className="empty-state">
               <FaBook className="empty-icon" />
               <h3>No Case Studies Found</h3>
-              <p>Try adjusting your filters or search query</p>
+              <p>Try adjusting your search or filters</p>
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="pagination">
-              <button 
-                className="pagination-btn"
-                onClick={() => setCurrentPage(prev => prev - 1)}
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
+                className="pagination-btn"
               >
                 <FaChevronLeft /> Previous
               </button>
 
-              <div className="pagination-info">
+              <span className="pagination-info">
                 Page {currentPage} of {totalPages}
-              </div>
+              </span>
 
-              <button 
-                className="pagination-btn"
-                onClick={() => setCurrentPage(prev => prev + 1)}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
+                className="pagination-btn"
               >
                 Next <FaChevronRight />
               </button>
