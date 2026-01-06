@@ -16,6 +16,7 @@ const Plants = lazy(() => import('./pages/Plants'));
 const Plant = lazy(() => import('./pages/Plant'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
 const CaseStudies = lazy(() => import('./pages/CaseStudies'));
+const CaseStudyDetail = lazy(() => import('./pages/CaseStudyDetail'));
 const AddCaseStudy = lazy(() => import('./pages/AddCaseStudy'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const Feedback = lazy(() => import('./pages/Feedback'));
@@ -67,6 +68,7 @@ function App() {
             <Route path="/plant/:slug" element={<Plant />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/case-studies" element={<CaseStudies />} />
+            <Route path="/case-studies/:id" element={<CaseStudyDetail />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/feedback" element={<Feedback />} />
             
