@@ -114,7 +114,7 @@ const handleSubmit = async (e) => {
   // ✅ Check authentication FIRST
   if (!user || !user.id) {
     toast.error('You must be logged in to submit');
-    navigate('/py/login'); // Use correct route
+    navigate('/login'); // Use correct route
     return;
   }
 
@@ -153,7 +153,7 @@ const handleSubmit = async (e) => {
 
     if (response.success) {
       toast.success('Case study submitted successfully! Awaiting admin review.');
-      navigate('/py/case-studies'); // Use correct route
+      navigate('/case-studies'); // Use correct route
     } else {
       toast.error(response.message || 'Submission failed');
     }
@@ -162,7 +162,7 @@ const handleSubmit = async (e) => {
 
     if (error.status === 401) {
       toast.error('Session expired. Please login again.');
-      setTimeout(() => navigate('/py/login'), 1500);
+      setTimeout(() => navigate('/login'), 1500);
     } else if (error.status === 413) {
       toast.error('File too large. Maximum size is 10MB.');
     } else if (error.status === 400) {
