@@ -48,9 +48,24 @@ const CaseStudies = () => {
       if (filters.search) params.q = filters.search;
 
       const response = await caseStudiesAPI.list(params);
-
-      const dataArray = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
-      const total = response?.pagination?.total || response?.total || dataArray.length;
+      
+      // Handle different API response structures
+      let dataArray = [];
+      let total = 0;
+      
+      if (response?.data?.data) {
+        // If response has nested data property
+        dataArray = response.data.data;
+        total = response.data.pagination?.total || dataArray.length;
+      } else if (response?.data) {
+        // If response has direct data property
+        dataArray = response.data;
+        total = response.pagination?.total || dataArray.length;
+      } else if (Array.isArray(response)) {
+        // If response is directly an array
+        dataArray = response;
+        total = dataArray.length;
+      }
 
       setStudies(dataArray);
       setTotalCount(total);
@@ -64,23 +79,28 @@ const CaseStudies = () => {
     }
   };
 
-const fetchPlants = async () => {
-  try {
-    const response = await plantsAPI.list({ limit: 100 });
+  const fetchPlants = async () => {
+    try {
+      const response = await plantsAPI.list({ limit: 100 });
+      
+      // Handle different API response structures
+      let plantArray = [];
+      
+      if (response?.data?.data) {
+        plantArray = response.data.data;
+      } else if (response?.data) {
+        plantArray = Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        plantArray = response;
+      }
 
-
-    // The plants array is at response.data.data (due to your wrapper)
-    const plantArray = Array.isArray(response?.data?.data)
-      ? response.data.data
-      : [];
-
-    setPlants(plantArray);
-  } catch (error) {
-    console.error('Error fetching plants:', error);
-    toast.error('Failed to load plant filter');
-    setPlants([]);
-  }
-};
+      setPlants(plantArray);
+    } catch (error) {
+      console.error('Error fetching plants:', error);
+      toast.error('Failed to load plant filter');
+      setPlants([]);
+    }
+  };
 
   const handleFilterChange = (key, value) => {
     const trimmedValue = value?.trim() || '';
@@ -98,7 +118,6 @@ const fetchPlants = async () => {
 
   const handleDownload = async (studyId) => {
     try {
-      toast.info('Preparing download...');
       const response = await caseStudiesAPI.download(studyId);
 
       if (!response.data || response.data.size === 0) {
@@ -150,8 +169,8 @@ const fetchPlants = async () => {
                   <FaPlus /> Submit Case Study
                 </Link>
               ) : (
-                <Link to="/login" className="btn btn-white btn-lg">
-                  Login to Submit
+                <Link to="/login?redirect=/case-studies/add" className="btn btn-white btn-lg">
+                  <FaPlus /> Login to Submit
                 </Link>
               )}
             </div>

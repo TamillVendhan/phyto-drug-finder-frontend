@@ -77,7 +77,7 @@ const handleResponse = (response) => {
   if (resData.data !== undefined) return resData.data;
 
   // If success is true or undefined, return the whole response
-  return resData;
+  return resData.data || resData;
 };
 
 const handleError = (error) => {
