@@ -92,35 +92,38 @@ const fetchPlant = async () => {
       let data;
 
       switch (activeTab) {
-        case 'compounds':
-          data = (await compoundsAPI.byPlant(plant.id)).data;
-          setCompounds(Array.isArray(data) ? data : []);
-          break;
+case 'compounds':
+  const res = await compoundsAPI.byPlant(plant.id);
 
-        case 'medicinal':
-          data = (await medicinalAPI.byPlant(plant.id)).data;
-          setMedicinalUses(Array.isArray(data) ? data : []);
-          break;
+  console.log("Compounds API raw:", res);
 
-        case 'safety':
-          data = (await safetyAPI.byPlant(plant.id)).data;
-          setSafety(data || null);
-          break;
+  setCompounds(Array.isArray(res) ? res : []);
+  break;
 
-        case 'druglikeness':
-          data = (await drugLikenessAPI.byPlant(plant.id)).data;
-          setDrugLikeness(Array.isArray(data) ? data : []);
-          break;
+case 'medicinal':
+  data = await medicinalAPI.byPlant(plant.id);
+  setMedicinalUses(Array.isArray(data) ? data : []);
+  break;
 
-        case 'ecology':
-          data = (await ecologyAPI.byPlant(plant.id)).data;
-          setEcology(data || null);
-          break;
+case 'safety':
+  data = await safetyAPI.byPlant(plant.id);
+  setSafety(data || null);
+  break;
 
-        case 'cultural':
-          data = (await culturalAPI.byPlant(plant.id)).data;
-          setCulturalUses(Array.isArray(data) ? data : []);
-          break;
+case 'druglikeness':
+  data = await drugLikenessAPI.byPlant(plant.id);
+  setDrugLikeness(Array.isArray(data) ? data : []);
+  break;
+
+case 'ecology':
+  data = await ecologyAPI.byPlant(plant.id);
+  setEcology(data || null);
+  break;
+
+case 'cultural':
+  data = await culturalAPI.byPlant(plant.id);
+  setCulturalUses(Array.isArray(data) ? data : []);
+  break;
 
         default:
           break;
@@ -404,7 +407,7 @@ const fetchPlant = async () => {
                         {medicinalUses.map((use) => (
                           <div key={use.id} className="medicinal-card">
                             <div className="medicinal-card-header">
-                              <h4>{use.condition}</h4>
+                              <h4>{use.medical_condition  }</h4>
                               <span className={`evidence-badge ${use.evidence_level?.toLowerCase() || ''}`}>
                                 {use.evidence_level || 'Unknown'}
                               </span>

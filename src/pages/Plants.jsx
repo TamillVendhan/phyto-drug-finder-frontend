@@ -102,7 +102,7 @@ const Plants = () => {
           setPlants(prev => [...prev, ...newPlants]);
         }
         
-        setTotalCount(response.data.total || newPlants.length);
+        setTotalCount(newPlants.length);
         setHasMore(newPlants.length === ITEMS_PER_PAGE);
       } else {
         setError('Failed to load plants');

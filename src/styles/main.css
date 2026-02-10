@@ -7521,3 +7521,481 @@ p {
     font-size: 10pt;
   }
 }
+/* =====================================================
+   CASE STUDIES PAGE STYLES
+   (Styled to match Plants page theme)
+   ===================================================== */
+
+.case-studies-page {
+  background: var(--gray-50);
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.case-studies-hero {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  padding: var(--space-12) 0;
+  color: white;
+  text-align: center;
+}
+
+.case-studies-hero .hero-content h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-2);
+}
+
+.case-studies-hero .hero-content p {
+  font-size: var(--text-lg);
+  opacity: 0.9;
+  margin-bottom: var(--space-4);
+}
+
+.case-studies-hero .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Main Content Section */
+.case-studies-content {
+  padding: var(--space-8) 0;
+}
+
+/* Toolbar */
+.studies-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+/* Search Box */
+.search-filter {
+  position: relative;
+  flex: 1;
+  max-width: 350px;
+}
+
+.search-filter .search-icon {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+}
+
+.search-filter input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+}
+
+/* Filter Dropdowns */
+.filter-group {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.form-select {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  background: white;
+  min-width: 160px;
+}
+
+/* Results Info */
+.results-info {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* Studies List */
+.studies-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+/* Study Card */
+.study-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: all var(--transition-fast);
+}
+
+.study-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Header */
+.study-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.study-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--primary-600);
+  text-decoration: none;
+}
+
+.study-title:hover {
+  text-decoration: underline;
+}
+
+/* Plant Badge */
+.study-plant-badge {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Abstract */
+.study-abstract {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Meta Info */
+.study-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Actions */
+.study-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+}
+
+.empty-state .empty-icon {
+  font-size: 64px;
+  color: var(--gray-300);
+  margin-bottom: var(--space-4);
+}
+
+.empty-state h3 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+}
+
+/* Skeleton Loader */
+.study-card.skeleton {
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-title {
+  height: 18px;
+  background: var(--gray-200);
+  width: 70%;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text {
+  height: 14px;
+  background: var(--gray-200);
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text.short {
+  width: 50%;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  background: white;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .studies-toolbar {
+    flex-direction: column;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .study-actions {
+    justify-content: flex-start;
+  }
+
+  .study-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+/* =====================================================
+   CASE STUDY DETAIL PAGE STYLES
+   (Matching Plants and Case Studies Theme)
+   ===================================================== */
+
+.case-study-detail-page {
+  background: var(--gray-50);
+  min-height: 100vh;
+  padding: var(--space-8) 0;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-4);
+}
+
+.breadcrumb a {
+  color: var(--primary-600);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* Header Section */
+.study-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.study-header h1 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.study-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* Meta Grid */
+.study-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.meta-item svg {
+  font-size: 22px;
+  color: var(--primary-600);
+}
+
+.meta-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-item strong {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.meta-item span,
+.meta-item a {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.meta-item a {
+  color: var(--primary-600);
+  text-decoration: none;
+}
+
+.meta-item a:hover {
+  text-decoration: underline;
+}
+
+/* Study Sections */
+.study-section {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.study-section h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: var(--space-3);
+}
+
+/* Abstract */
+.abstract-content {
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* PDF Section */
+.pdf-section {
+  padding: var(--space-6);
+}
+
+.pdf-container {
+  background: var(--gray-100);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  border: 1px solid var(--border-light);
+}
+
+.pdf-note {
+  text-align: center;
+  margin-top: var(--space-3);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+/* Footer */
+.study-footer {
+  text-align: center;
+  margin-top: var(--space-6);
+}
+
+/* Not Found State */
+.not-found {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+}
+
+.not-found .empty-icon {
+  font-size: 64px;
+  color: var(--gray-300);
+  margin-bottom: var(--space-4);
+}
+
+.not-found h2 {
+  margin-bottom: var(--space-2);
+}
+
+.not-found p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+/* Loader Wrapper */
+.container .inline-loader {
+  padding: var(--space-10) 0;
+  text-align: center;
+}
+
+/* Buttons consistency */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .study-header {
+    flex-direction: column;
+  }
+
+  .study-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-container iframe {
+    height: 500px !important;
+  }
+}
+
