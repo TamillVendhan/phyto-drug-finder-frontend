@@ -83,54 +83,56 @@ export default function UploadImage() {
 
   }
 
-  async function handleSubmit(e){
+const handleSubmit = async (e) => {
 
-    e.preventDefault();
+  e.preventDefault();
 
-    if(!file || !form.plant_id){
+  if (!file || !form.plant_id) {
 
-      toast.error("Plant and image required");
-      return;
-
-    }
-
-    setLoading(true);
-
-    try{
-
-      const data=new FormData();
-
-      data.append("image",file);
-
-      Object.keys(form).forEach(k=>{
-
-        data.append(k,form[k]);
-
-      });
-
-      const res=await imagesAPI.upload(data);
-
-      if(res.data.success){
-
-        toast.success("Image uploaded");
-
-        navigate("/gallery");
-
-      }else{
-
-        toast.error(res.data.error);
-
-      }
-
-    }catch{
-
-      toast.error("Upload failed");
-
-    }
-
-    setLoading(false);
+    toast.error("Plant and image required");
+    return;
 
   }
+
+  setLoading(true);
+
+  try {
+
+    const data = new FormData();
+
+    data.append("image", file);
+
+    Object.keys(form).forEach(k => {
+      data.append(k, form[k]);
+    });
+
+    const response = await imagesAPI.upload(data);
+
+    console.log("UPLOAD RESPONSE:", response);
+
+    if (response.success) {
+
+      toast.success("Image uploaded successfully!");
+
+      navigate("/gallery");
+
+    } else {
+
+      toast.error(response.error || "Upload failed");
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    toast.error("Upload failed");
+
+  }
+
+  setLoading(false);
+
+};
 
   return(
 
