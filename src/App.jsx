@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import { PageLoader } from './components/Loader';
 import ProtectedRoute from './components/ProtectedRoute';
 import ApiTestPage from './pages/ApiTest';
+import UploadImage from './pages/UploadImage';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -98,6 +99,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AddCaseStudy />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/gallery/upload" 
+              element={
+                <ProtectedRoute>
+                  <UploadImage />
                 </ProtectedRoute>
               } 
             />
