@@ -8084,3 +8084,80 @@ cursor:pointer;
 background:#218838;
 
 }
+
+.gallery-page {
+  padding: 20px;
+}
+
+.gallery-hero {
+  background: #1f8b4c;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.card-img {
+  position: relative;
+  cursor: pointer;
+}
+
+.card-img img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:white;
+}
+
+.card-img:hover .overlay {
+  opacity:1;
+}
+
+.card-body {
+  padding: 10px;
+}
+
+.btn-download {
+  background: green;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor:pointer;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+}

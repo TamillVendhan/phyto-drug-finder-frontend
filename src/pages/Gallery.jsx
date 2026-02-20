@@ -1,24 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaImages,
   FaSearch,
   FaTimes,
   FaExpand,
-  FaDownload,
   FaUpload,
   FaChevronLeft,
   FaChevronRight,
   FaUser,
-  FaCalendar
+  FaCalendar,
+  FaLeaf
 } from 'react-icons/fa';
 
 import { useAuth } from '../context/AuthContext';
 import { imagesAPI } from '../api/api';
 import { toast } from 'react-toastify';
-
-const BASE_URL =
-"https://hcctrichy.ac.in/phyto-drug-finder-main/backend/";
 
 const Gallery = () => {
 
@@ -26,7 +23,6 @@ const Gallery = () => {
 
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState('');
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -37,43 +33,42 @@ const Gallery = () => {
 
   const imagesPerPage = 12;
 
-  /*
-  ----------------------------
-  FETCH IMAGES
-  ----------------------------
-  */
+  /* FIX IMAGE URL */
+  const fixImageUrl = (image) => {
 
-  useEffect(() => {
+    if (image.image_url) {
+      return image.image_url.replace(
+        "/backend/uploads/",
+        "/backend/api/uploads/"
+      );
+    }
 
-    fetchImages();
+    return (
+      "https://hcctrichy.ac.in/phyto-drug-finder-main/backend/api/" +
+      image.file_path
+    );
 
-  }, [currentPage]);
+  };
 
-  const fetchImages = async () => {
+  /* FETCH IMAGES */
+  const fetchImages = useCallback(async () => {
 
     try {
 
       setLoading(true);
 
       const params = {
-
         page: currentPage,
         limit: imagesPerPage,
         search: searchQuery || undefined
-
       };
 
-      const response = await imagesAPI.list(params);
+      const data = await imagesAPI.list(params);
 
-      console.log("Gallery API:", response);
+      if (Array.isArray(data)) {
 
-      if (response?.data?.success) {
-
-        setImages(response.data.data || []);
-
-        setTotalImages(
-          response.data.pagination?.total || 0
-        );
+        setImages(data);
+        setTotalImages(data.length);
 
       } else {
 
@@ -85,9 +80,7 @@ const Gallery = () => {
     } catch (error) {
 
       console.error(error);
-
-      setImages([]);
-      setTotalImages(0);
+      toast.error("Failed loading gallery");
 
     } finally {
 
@@ -95,45 +88,36 @@ const Gallery = () => {
 
     }
 
-  };
+  }, [currentPage, searchQuery]);
 
-  /*
-  ----------------------------
-  SEARCH
-  ----------------------------
-  */
+  useEffect(() => {
 
+    fetchImages();
+
+  }, [fetchImages]);
+
+  /* SEARCH */
   const handleSearch = (e) => {
 
     e.preventDefault();
-
     setCurrentPage(1);
-
     fetchImages();
 
   };
 
-  /*
-  ----------------------------
-  LIGHTBOX
-  ----------------------------
-  */
-
+  /* LIGHTBOX */
   const openLightbox = (index) => {
 
     setCurrentImageIndex(index);
-
     setLightboxOpen(true);
-
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
   };
 
   const closeLightbox = () => {
 
     setLightboxOpen(false);
-
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = "auto";
 
   };
 
@@ -153,117 +137,52 @@ const Gallery = () => {
 
   };
 
-  /*
-  ----------------------------
-  DOWNLOAD
-  ----------------------------
-  */
-
-  const handleDownload = (image) => {
-
-    const url = BASE_URL + image.file_path;
-
-    const a = document.createElement("a");
-
-    a.href = url;
-
-    a.download = image.caption || "plant-image";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    document.body.removeChild(a);
-
-  };
-
-  /*
-  ----------------------------
-  PAGINATION
-  ----------------------------
-  */
-
-  const totalPages = Math.ceil(
-    totalImages / imagesPerPage
-  );
-
-  /*
-  ============================
-  JSX
-  ============================
-  */
+  const totalPages = Math.ceil(totalImages / imagesPerPage);
 
   return (
 
   <div className="gallery-page">
 
     {/* HERO */}
-
     <section className="gallery-hero">
 
       <div className="container">
 
         <h1>
-
           <FaImages /> Plant Image Gallery
-
         </h1>
 
-        <p>
+        <p>Browse approved uploaded plant images</p>
 
-          Browse all approved images
-
-        </p>
-
-        <form
-        className="gallery-search"
-        onSubmit={handleSearch}
-        >
+        <form className="gallery-search" onSubmit={handleSearch}>
 
           <div className="search-input-wrapper">
 
-            <FaSearch className="search-icon"/>
+            <FaSearch />
 
             <input
               type="text"
               placeholder="Search images..."
               value={searchQuery}
-              onChange={(e)=>
-                setSearchQuery(e.target.value)
-              }
+              onChange={(e)=>setSearchQuery(e.target.value)}
             />
 
             {searchQuery &&
-
               <button
                 type="button"
-                className="clear-btn"
                 onClick={()=>{
-
                   setSearchQuery("");
-
-                  setCurrentPage(1);
-
                   fetchImages();
-
                 }}
               >
-
                 <FaTimes/>
-
               </button>
-
             }
 
           </div>
 
-          <button
-          className="btn btn-primary"
-          type="submit"
-          >
-
+          <button type="submit">
             Search
-
           </button>
 
         </form>
@@ -272,66 +191,40 @@ const Gallery = () => {
 
     </section>
 
-    {/* MAIN */}
-
+    {/* CONTENT */}
     <section className="gallery-content">
 
       <div className="container">
 
         {/* Upload button */}
-
         <div className="gallery-actions">
 
           {isAuthenticated ?
 
-            <Link
-            to="/gallery/upload"
-            className="btn btn-primary"
-            >
-
+            <Link to="/gallery/upload" className="btn btn-primary">
               <FaUpload/> Upload Image
-
             </Link>
 
           :
 
-            <Link
-            to="/login?redirect=/gallery/upload"
-            className="btn btn-primary"
-            >
-
+            <Link to="/login?redirect=/gallery/upload" className="btn btn-primary">
               <FaUpload/> Login to Upload
-
             </Link>
 
           }
 
         </div>
 
-        {/* Loading */}
-
+        {/* LOADING */}
         {loading ?
 
           <div className="gallery-grid">
-
             {[...Array(8)].map((_,i)=>(
-
-              <div
-              key={i}
-              className="gallery-item-skeleton"
-              >
-
-                <div className="skeleton-image"/>
-
-              </div>
-
+              <div key={i} className="gallery-item-skeleton"/>
             ))}
-
           </div>
 
         :
-
-        /* Image grid */
 
         images.length > 0 ?
 
@@ -341,83 +234,54 @@ const Gallery = () => {
 
           {images.map((image,index)=>(
 
-          <div
-          key={image.id}
-          className="gallery-item"
-          >
+          <div key={image.id} className="gallery-item">
 
+            {/* IMAGE */}
             <div
-            className="gallery-image"
-            onClick={()=>
-              openLightbox(index)
-            }
+              className="gallery-image"
+              onClick={()=>openLightbox(index)}
             >
 
               <img
-              src={
-                BASE_URL +
-                image.file_path
-              }
-              alt={
-                image.caption ||
-                "Plant image"
-              }
+                src={fixImageUrl(image)}
+                alt={image.caption || "Plant Image"}
+                style={{
+                  width:"100%",
+                  height:"220px",
+                  objectFit:"cover"
+                }}
               />
 
               <div className="gallery-overlay">
-
                 <FaExpand/>
-
               </div>
 
               <span className="gallery-category-badge">
-
                 {image.category}
-
               </span>
 
             </div>
 
+            {/* INFO */}
             <div className="gallery-info">
 
-              <h3>
+              <h3>{image.caption}</h3>
 
-                {image.caption ||
-                 "Untitled"}
-
-              </h3>
+              <p className="plant-name">
+                <FaLeaf/> {image.plant_name || "Unknown Plant"}
+              </p>
 
               <div className="gallery-meta">
 
                 <span>
-
-                  <FaUser/>
-
-                  {image.uploader_name ||
-                   "Unknown"}
-
+                  <FaUser/> {image.uploader_name}
                 </span>
 
                 <span>
-
-                  <FaCalendar/>
-
-                  {image.created_at}
-
+                  <FaCalendar/> {image.created_at}
                 </span>
 
               </div>
-
-              <button
-              className="btn btn-sm btn-outline"
-              onClick={()=>
-                handleDownload(image)
-              }
-              >
-
-                <FaDownload/> Download
-
-              </button>
 
             </div>
 
@@ -427,41 +291,27 @@ const Gallery = () => {
 
         </div>
 
-        {/* Pagination */}
-
+        {/* PAGINATION */}
         {totalPages > 1 &&
 
         <div className="pagination">
 
           <button
-          disabled={currentPage===1}
-          onClick={()=>
-            setCurrentPage(p=>p-1)
-          }
+            disabled={currentPage===1}
+            onClick={()=>setCurrentPage(p=>p-1)}
           >
-
             <FaChevronLeft/>
-
           </button>
 
           <span>
-
-            Page {currentPage}
-            of {totalPages}
-
+            Page {currentPage} of {totalPages}
           </span>
 
           <button
-          disabled={
-            currentPage===totalPages
-          }
-          onClick={()=>
-            setCurrentPage(p=>p+1)
-          }
+            disabled={currentPage===totalPages}
+            onClick={()=>setCurrentPage(p=>p+1)}
           >
-
             <FaChevronRight/>
-
           </button>
 
         </div>
@@ -475,12 +325,8 @@ const Gallery = () => {
         <div className="empty-state">
 
           <FaImages/>
-
-          <h3>
-
-            No images found
-
-          </h3>
+          <h3>No images found</h3>
+          <p>No approved uploads yet</p>
 
         </div>
 
@@ -491,55 +337,35 @@ const Gallery = () => {
     </section>
 
     {/* LIGHTBOX */}
-
     {lightboxOpen && images[currentImageIndex] &&
 
-    <div
-    className="lightbox"
-    onClick={closeLightbox}
-    >
+    <div className="lightbox" onClick={closeLightbox}>
 
       <div
-      className="lightbox-content"
-      onClick={(e)=>
-        e.stopPropagation()
-      }
+        className="lightbox-content"
+        onClick={(e)=>e.stopPropagation()}
       >
 
-        <button
-        onClick={closeLightbox}
-        className="lightbox-close"
-        >
-
+        <button onClick={closeLightbox}>
           <FaTimes/>
-
         </button>
 
-        <button
-        onClick={goToPrevious}
-        className="lightbox-nav prev"
-        >
-
+        <button onClick={goToPrevious}>
           <FaChevronLeft/>
-
         </button>
 
         <img
-        src={
-          BASE_URL +
-          images[currentImageIndex]
-          .file_path
-        }
-        alt=""
+          src={fixImageUrl(images[currentImageIndex])}
+          alt={images[currentImageIndex].caption || "Plant Image"}
+          style={{maxHeight:"80vh"}}
         />
 
-        <button
-        onClick={goToNext}
-        className="lightbox-nav next"
-        >
+        <div style={{marginTop:"10px"}}>
+          <FaLeaf/> {images[currentImageIndex].plant_name}
+        </div>
 
+        <button onClick={goToNext}>
           <FaChevronRight/>
-
         </button>
 
       </div>
