@@ -12,16 +12,23 @@ import {
   FaUser,
   FaCalendar
 } from 'react-icons/fa';
+
 import { useAuth } from '../context/AuthContext';
 import { imagesAPI } from '../api/api';
 import { toast } from 'react-toastify';
 
+const BASE_URL =
+"https://hcctrichy.ac.in/phyto-drug-finder-main/backend/";
+
 const Gallery = () => {
+
   const { isAuthenticated } = useAuth();
 
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState('');
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -30,294 +37,521 @@ const Gallery = () => {
 
   const imagesPerPage = 12;
 
+  /*
+  ----------------------------
+  FETCH IMAGES
+  ----------------------------
+  */
+
   useEffect(() => {
+
     fetchImages();
+
   }, [currentPage]);
 
   const fetchImages = async () => {
+
     try {
+
       setLoading(true);
 
       const params = {
-        page: currentPage,
-        limit: imagesPerPage
-      };
 
-      if (searchQuery) {
-        params.search = searchQuery;
-      }
+        page: currentPage,
+        limit: imagesPerPage,
+        search: searchQuery || undefined
+
+      };
 
       const response = await imagesAPI.list(params);
 
+      console.log("Gallery API:", response);
+
       if (response?.data?.success) {
+
         setImages(response.data.data || []);
-        setTotalImages(response.data.total || 0);
+
+        setTotalImages(
+          response.data.pagination?.total || 0
+        );
+
       } else {
+
         setImages([]);
         setTotalImages(0);
+
       }
 
     } catch (error) {
-      console.error("Error fetching images:", error);
+
+      console.error(error);
+
       setImages([]);
       setTotalImages(0);
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
+
+  /*
+  ----------------------------
+  SEARCH
+  ----------------------------
+  */
 
   const handleSearch = (e) => {
+
     e.preventDefault();
+
     setCurrentPage(1);
+
     fetchImages();
+
   };
 
+  /*
+  ----------------------------
+  LIGHTBOX
+  ----------------------------
+  */
+
   const openLightbox = (index) => {
+
     setCurrentImageIndex(index);
+
     setLightboxOpen(true);
+
     document.body.style.overflow = 'hidden';
+
   };
 
   const closeLightbox = () => {
+
     setLightboxOpen(false);
+
     document.body.style.overflow = 'auto';
+
   };
 
   const goToPrevious = () => {
-    setCurrentImageIndex((prev) =>
+
+    setCurrentImageIndex(prev =>
       prev === 0 ? images.length - 1 : prev - 1
     );
+
   };
 
   const goToNext = () => {
-    setCurrentImageIndex((prev) =>
+
+    setCurrentImageIndex(prev =>
       prev === images.length - 1 ? 0 : prev + 1
     );
+
   };
 
-  const handleDownload = async (image) => {
-    try {
-      toast.success(`Downloading: ${image.caption || "Image"}`);
-    } catch (error) {
-      toast.error("Download failed");
-    }
+  /*
+  ----------------------------
+  DOWNLOAD
+  ----------------------------
+  */
+
+  const handleDownload = (image) => {
+
+    const url = BASE_URL + image.file_path;
+
+    const a = document.createElement("a");
+
+    a.href = url;
+
+    a.download = image.caption || "plant-image";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    document.body.removeChild(a);
+
   };
 
-  const totalPages = Math.ceil(totalImages / imagesPerPage);
+  /*
+  ----------------------------
+  PAGINATION
+  ----------------------------
+  */
+
+  const totalPages = Math.ceil(
+    totalImages / imagesPerPage
+  );
+
+  /*
+  ============================
+  JSX
+  ============================
+  */
 
   return (
-    <div className="gallery-page">
 
-      {/* HERO */}
-      <section className="gallery-hero">
-        <div className="container">
-          <h1><FaImages /> Plant Image Gallery</h1>
-          <p>Browse all approved images uploaded to the system</p>
+  <div className="gallery-page">
 
-          <form className="gallery-search" onSubmit={handleSearch}>
-            <div className="search-input-wrapper">
-              <FaSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search images..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  className="clear-btn"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setCurrentPage(1);
-                    fetchImages();
-                  }}
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
+    {/* HERO */}
 
-            <button type="submit" className="btn btn-primary">
-              Search
-            </button>
-          </form>
-        </div>
-      </section>
+    <section className="gallery-hero">
 
-      {/* MAIN CONTENT */}
-      <section className="gallery-content">
-        <div className="container">
+      <div className="container">
 
-          {/* UPLOAD ACTION */}
-          <div className="gallery-actions">
-            {isAuthenticated ? (
-              <Link to="/gallery/upload" className="btn btn-primary">
-                <FaUpload /> Upload Image
-              </Link>
-            ) : (
-              <Link to="/login?redirect=/gallery/upload" className="btn btn-primary">
-                <FaUpload /> Login to Upload
-              </Link>
-            )}
+        <h1>
+
+          <FaImages /> Plant Image Gallery
+
+        </h1>
+
+        <p>
+
+          Browse all approved images
+
+        </p>
+
+        <form
+        className="gallery-search"
+        onSubmit={handleSearch}
+        >
+
+          <div className="search-input-wrapper">
+
+            <FaSearch className="search-icon"/>
+
+            <input
+              type="text"
+              placeholder="Search images..."
+              value={searchQuery}
+              onChange={(e)=>
+                setSearchQuery(e.target.value)
+              }
+            />
+
+            {searchQuery &&
+
+              <button
+                type="button"
+                className="clear-btn"
+                onClick={()=>{
+
+                  setSearchQuery("");
+
+                  setCurrentPage(1);
+
+                  fetchImages();
+
+                }}
+              >
+
+                <FaTimes/>
+
+              </button>
+
+            }
+
           </div>
 
-          {/* IMAGE GRID */}
-          {loading ? (
-            <div className="gallery-grid">
-              {[...Array(8)].map((_, index) => (
-                <div key={index} className="gallery-item-skeleton">
-                  <div className="skeleton-image"></div>
-                </div>
-              ))}
-            </div>
+          <button
+          className="btn btn-primary"
+          type="submit"
+          >
 
-          ) : images.length > 0 ? (
-            <>
-              <div className="gallery-grid">
-                {images.map((image, index) => (
-                  <div key={image.id} className="gallery-item">
+            Search
 
-                    <div
-                      className="gallery-image"
-                      onClick={() => openLightbox(index)}
-                    >
-                      <img
-                        src={image.file_path}
-                        alt={image.alt_text || image.caption || "Plant Image"}
-                        loading="lazy"
-                      />
+          </button>
 
-                      <div className="gallery-overlay">
-                        <FaExpand className="expand-icon" />
-                      </div>
+        </form>
 
-                      <span className="gallery-category-badge">
-                        {image.category}
-                      </span>
-                    </div>
+      </div>
 
-                    <div className="gallery-info">
-                      <h3 className="gallery-title">
-                        {image.caption || "Untitled Image"}
-                      </h3>
+    </section>
 
-                      <div className="gallery-meta">
-                        <span>
-                          <FaUser /> {image.uploaded_by || "Unknown"}
-                        </span>
-                        <span>
-                          <FaCalendar /> {image.created_at}
-                        </span>
-                      </div>
+    {/* MAIN */}
 
-                      <button
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleDownload(image)}
-                      >
-                        <FaDownload /> Download
-                      </button>
+    <section className="gallery-content">
 
-                    </div>
-                  </div>
-                ))}
+      <div className="container">
+
+        {/* Upload button */}
+
+        <div className="gallery-actions">
+
+          {isAuthenticated ?
+
+            <Link
+            to="/gallery/upload"
+            className="btn btn-primary"
+            >
+
+              <FaUpload/> Upload Image
+
+            </Link>
+
+          :
+
+            <Link
+            to="/login?redirect=/gallery/upload"
+            className="btn btn-primary"
+            >
+
+              <FaUpload/> Login to Upload
+
+            </Link>
+
+          }
+
+        </div>
+
+        {/* Loading */}
+
+        {loading ?
+
+          <div className="gallery-grid">
+
+            {[...Array(8)].map((_,i)=>(
+
+              <div
+              key={i}
+              className="gallery-item-skeleton"
+              >
+
+                <div className="skeleton-image"/>
+
               </div>
 
-              {/* PAGINATION */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <button
-                    className="pagination-btn"
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <FaChevronLeft /> Previous
-                  </button>
+            ))}
 
-                  <span className="pagination-info">
-                    Page {currentPage} of {totalPages}
-                  </span>
+          </div>
 
-                  <button
-                    className="pagination-btn"
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next <FaChevronRight />
-                  </button>
-                </div>
-              )}
+        :
 
-            </>
-          ) : (
+        /* Image grid */
 
-            <div className="empty-state">
-              <FaImages className="empty-icon" />
-              <h3>No images available</h3>
-              <p>No approved images found in the system.</p>
-            </div>
+        images.length > 0 ?
 
-          )}
-        </div>
-      </section>
+        <>
 
-      {/* LIGHTBOX */}
-      {lightboxOpen && images[currentImageIndex] && (
-        <div className="lightbox" onClick={closeLightbox}>
+        <div className="gallery-grid">
+
+          {images.map((image,index)=>(
+
           <div
-            className="lightbox-content"
-            onClick={(e) => e.stopPropagation()}
+          key={image.id}
+          className="gallery-item"
           >
-            <button className="lightbox-close" onClick={closeLightbox}>
-              <FaTimes />
-            </button>
 
-            <button className="lightbox-nav prev" onClick={goToPrevious}>
-              <FaChevronLeft />
-            </button>
+            <div
+            className="gallery-image"
+            onClick={()=>
+              openLightbox(index)
+            }
+            >
 
-            <div className="lightbox-image-container">
               <img
-                src={images[currentImageIndex].file_path}
-                alt={images[currentImageIndex].caption}
+              src={
+                BASE_URL +
+                image.file_path
+              }
+              alt={
+                image.caption ||
+                "Plant image"
+              }
               />
+
+              <div className="gallery-overlay">
+
+                <FaExpand/>
+
+              </div>
+
+              <span className="gallery-category-badge">
+
+                {image.category}
+
+              </span>
+
             </div>
 
-            <button className="lightbox-nav next" onClick={goToNext}>
-              <FaChevronRight />
-            </button>
+            <div className="gallery-info">
 
-            <div className="lightbox-info">
               <h3>
-                {images[currentImageIndex].caption}
+
+                {image.caption ||
+                 "Untitled"}
+
               </h3>
 
-              <div className="lightbox-meta">
+              <div className="gallery-meta">
+
                 <span>
-                  <FaUser /> {images[currentImageIndex].uploaded_by}
+
+                  <FaUser/>
+
+                  {image.uploader_name ||
+                   "Unknown"}
+
                 </span>
+
                 <span>
-                  <FaCalendar /> {images[currentImageIndex].created_at}
+
+                  <FaCalendar/>
+
+                  {image.created_at}
+
                 </span>
+
               </div>
 
               <button
-                className="btn btn-primary"
-                onClick={() => handleDownload(images[currentImageIndex])}
+              className="btn btn-sm btn-outline"
+              onClick={()=>
+                handleDownload(image)
+              }
               >
-                <FaDownload /> Download
+
+                <FaDownload/> Download
+
               </button>
+
             </div>
+
           </div>
 
-          <div className="lightbox-counter">
-            {currentImageIndex + 1} / {images.length}
-          </div>
+          ))}
+
         </div>
-      )}
+
+        {/* Pagination */}
+
+        {totalPages > 1 &&
+
+        <div className="pagination">
+
+          <button
+          disabled={currentPage===1}
+          onClick={()=>
+            setCurrentPage(p=>p-1)
+          }
+          >
+
+            <FaChevronLeft/>
+
+          </button>
+
+          <span>
+
+            Page {currentPage}
+            of {totalPages}
+
+          </span>
+
+          <button
+          disabled={
+            currentPage===totalPages
+          }
+          onClick={()=>
+            setCurrentPage(p=>p+1)
+          }
+          >
+
+            <FaChevronRight/>
+
+          </button>
+
+        </div>
+
+        }
+
+        </>
+
+        :
+
+        <div className="empty-state">
+
+          <FaImages/>
+
+          <h3>
+
+            No images found
+
+          </h3>
+
+        </div>
+
+        }
+
+      </div>
+
+    </section>
+
+    {/* LIGHTBOX */}
+
+    {lightboxOpen && images[currentImageIndex] &&
+
+    <div
+    className="lightbox"
+    onClick={closeLightbox}
+    >
+
+      <div
+      className="lightbox-content"
+      onClick={(e)=>
+        e.stopPropagation()
+      }
+      >
+
+        <button
+        onClick={closeLightbox}
+        className="lightbox-close"
+        >
+
+          <FaTimes/>
+
+        </button>
+
+        <button
+        onClick={goToPrevious}
+        className="lightbox-nav prev"
+        >
+
+          <FaChevronLeft/>
+
+        </button>
+
+        <img
+        src={
+          BASE_URL +
+          images[currentImageIndex]
+          .file_path
+        }
+        alt=""
+        />
+
+        <button
+        onClick={goToNext}
+        className="lightbox-nav next"
+        >
+
+          <FaChevronRight/>
+
+        </button>
+
+      </div>
 
     </div>
+
+    }
+
+  </div>
+
   );
+
 };
 
 export default Gallery;
